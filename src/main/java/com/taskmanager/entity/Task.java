@@ -52,5 +52,23 @@ public class Task {
      */
     private String priority;
 
+    /**
+     * The creator of the task.
+     * This is a reference to the user who created the task.
+     *
+     * @see User
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_creator", nullable = false)
+    private User creator;
 
+    /**
+     * The executor of the task.
+     * This is a reference to the user assigned to execute the task.
+     *
+     * @see User
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_executor", nullable = false)
+    private User executor;
 }
