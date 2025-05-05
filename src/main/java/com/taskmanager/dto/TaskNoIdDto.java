@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import java.time.LocalDate;
 
 /**
  * Class TaskNoIdDto
@@ -67,6 +68,12 @@ public class TaskNoIdDto {
                 message = "Priorities that are acceptable: high|mid|low")
         @Schema(description = "task priority: high|mid|low", example = "low")
         private String priority;
+        /**
+         * The due date of the task.
+         * This is the date by which the task should be completed.
+         */
+        @Schema(description = "Task due date", example = "2023-12-31")
+        private LocalDate dueDate;
 
         /**
          * The creator of the task.

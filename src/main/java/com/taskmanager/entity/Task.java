@@ -3,6 +3,7 @@ package com.taskmanager.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -51,6 +52,14 @@ public class Task {
      * Possible priorities: "high", "mid", or "low".
      */
     private String priority;
+
+    // And add this field to the Task class:
+    /**
+     * The due date of the task.
+     * This is the date by which the task should be completed.
+     */
+    private LocalDate dueDate;
+
 
     /**
      * The creator of the task.
