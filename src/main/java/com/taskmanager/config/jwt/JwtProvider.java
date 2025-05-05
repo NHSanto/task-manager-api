@@ -15,10 +15,8 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
-import java.security.Key;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.TimeZone;
+import java.util.UUID;
 
 /**
  * Class JwtProvider
@@ -34,148 +32,99 @@ public class JwtProvider {
     private final SecretKey accessSecretKey;
     private final SecretKey refreshSecretKey;
 
-    /**
-     * Constructor that initializes the JwtProvider with the paths to the access and refresh secret key files.
-     * It loads the secret keys from the specified file paths and throws an IOException if the files do not exist.
-     *
-     * @param accessPath the path to the access token secret key file.
-     * @param refreshPath the path to the refresh token secret key file.
-     * @throws IOException if the specified files are not found.
-     */
+    private final JwtParser accessParser;
+    private final JwtParser refreshParser;
+
+    private static final long ACCESS_EXPIRATION_MS = 10 * 60 * 1000; // 10 minutes
+    private static final long REFRESH_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+
     public JwtProvider(
             @Value("${jwt.access.path}") String accessPath,
             @Value("${jwt.refresh.path}") String refreshPath,
             ResourceLoader resourceLoader
     ) throws IOException {
 
-        // ACCESS TOKEN
-        Resource accessResource = resourceLoader.getResource(accessPath);
-        if (accessResource.exists()) {
-            String access = new String(accessResource.getInputStream().readAllBytes());
-            accessSecretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(access));
-        } else {
-            throw new IOException("Access file not found: " + accessPath);
-        }
-//        Path a = Paths.get(accessPath).toAbsolutePath().normalize();
-//        if (Files.exists(a)) {
-//            String access = new String(Files.readAllBytes(a));
-//            accessSecretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(access));
-//        } else {
-//            throw new IOException("Access file not found: " + accessPath.toString());
-//        }
+        // Access token secret
+        this.accessSecretKey = loadAndValidateKey(resourceLoader.getResource(accessPath), "Access");
+        // Refresh token secret
+        this.refreshSecretKey = loadAndValidateKey(resourceLoader.getResource(refreshPath), "Refresh");
 
-        // REFRESH TOKEN
-        Resource refreshResource = resourceLoader.getResource(refreshPath);
-        if (refreshResource.exists()) {
-            String refresh = new String(refreshResource.getInputStream().readAllBytes());
-            refreshSecretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(refresh));
-        } else {
-            throw new IOException("Refresh file not found: " + refreshPath);
-        }
-//        Path r = Paths.get(refreshPath).toAbsolutePath().normalize();
-//        if (Files.exists(r)) {
-//            String refresh = new String(Files.readAllBytes(r));
-//            refreshSecretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(refresh));
-//        } else {
-//            throw new IOException("Refresh file not found: " + accessPath.toString());
-//        }
-
+        // Pre-compile parsers
+        this.accessParser = Jwts.parserBuilder().setSigningKey(accessSecretKey).build();
+        this.refreshParser = Jwts.parserBuilder().setSigningKey(refreshSecretKey).build();
     }
 
-    /**
-     * Generates an access token for the given user.
-     * The token contains the user's email, full name, role, and the issue and expiration dates.
-     *
-     * @param user the user for whom the access token is generated.
-     * @return the generated JWT access token.
-     */
-    public String generateAccessToken(@NonNull User user) {
+    private SecretKey loadAndValidateKey(Resource resource, String label) throws IOException {
+        if (!resource.exists()) {
+            throw new IOException(label + " key file not found at path: " + resource.getDescription());
+        }
 
-        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Minsk"));
-        Date currentDate = calendar.getTime();
-        Date expirationDate = new Date(currentDate.getTime() + 3600000); // 1 hour
+        String keyString = new String(resource.getInputStream().readAllBytes()).trim();
+        byte[] keyBytes = Decoders.BASE64.decode(keyString);
+
+        if (keyBytes.length < 32) {
+            throw new IllegalArgumentException(label + " secret key must be at least 256 bits (32 bytes)");
+        }
+
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    public String generateAccessToken(@NonNull User user) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + ACCESS_EXPIRATION_MS);
 
         return Jwts.builder()
                 .setSubject(user.getEmail())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(expirationDate)
+                .setId(UUID.randomUUID().toString())
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .setIssuer("task-manager-api")
+                .setAudience("access")
+                .claim("type", "access")
                 .claim("login", user.getEmail())
                 .claim("fullName", user.getFullName())
                 .claim("role", user.getRole())
+                .claim("userId", user.getId())
                 .signWith(accessSecretKey)
                 .compact();
     }
 
-    /**
-     * Generates a refresh token for the given user.
-     * The token contains the user's email, role, and the expiration date set to 24 hours from the current time.
-     *
-     * @param user the user for whom the refresh token is generated.
-     * @return the generated JWT refresh token.
-     */
-    public String generateRefreshToken(@NotNull User user){
-
-        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Minsk"));
-        Date currentDate = calendar.getTime();
-        Date expirationDate = new Date(currentDate.getTime() + 86400000);
+    public String generateRefreshToken(@NonNull User user) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + REFRESH_EXPIRATION_MS);
 
         return Jwts.builder()
                 .setSubject(user.getEmail())
-                .setExpiration(expirationDate) // 24 hours
+                .setId(UUID.randomUUID().toString())
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .setIssuer("task-manager-api")
+                .setAudience("refresh")
+                .claim("type", "refresh")
                 .claim("role", user.getRole())
                 .signWith(refreshSecretKey)
                 .compact();
     }
 
-    /**
-     * Extracts the claims from a given JWT token using the provided secret key.
-     *
-     * @param token the JWT token to parse.
-     * @param secret the secret key used to validate the token.
-     * @return the claims contained in the JWT token.
-     */
-    private Claims getClaims(@NonNull String token, @NonNull Key secret) {
-        return Jwts.parserBuilder()
-                .setSigningKey(secret)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
-
-    /**
-     * Extracts the claims from the given access token.
-     *
-     * @param token the JWT access token to parse.
-     * @return the claims contained in the JWT access token.
-     */
     public Claims getAccessClaims(@NonNull String token) {
-        return getClaims(token, accessSecretKey);
+        return accessParser.parseClaimsJws(token).getBody();
     }
 
-    /**
-     * Extracts the claims from the given refresh token.
-     *
-     * @param token the JWT refresh token to parse.
-     * @return the claims contained in the JWT refresh token.
-     */
     public Claims getRefreshClaims(@NonNull String token) {
-        return getClaims(token, refreshSecretKey);
+        return refreshParser.parseClaimsJws(token).getBody();
     }
 
-    /**
-     * Validates the given token using the provided secret key.
-     * If the token is expired, malformed, or has an invalid signature, an exception is thrown.
-     *
-     * @param token the JWT token to validate.
-     * @param secret the secret key used to validate the token.
-     * @return true if the token is valid, otherwise throws an exception.
-     */
-    private boolean validateToken(@NonNull String token, @NonNull Key secret) {
+    public boolean validateAccessToken(@NonNull String token) {
+        return validateToken(token, accessParser);
+    }
+
+    public boolean validateRefreshToken(@NonNull String token) {
+        return validateToken(token, refreshParser);
+    }
+
+    private boolean validateToken(@NonNull String token, @NonNull JwtParser parser) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(secret)
-                    .build()
-                    .parseClaimsJws(token);
+            parser.parseClaimsJws(token);
             return true;
         } catch (ExpiredJwtException expEx) {
             log.error("Expired JWT token: {}", expEx.getMessage(), expEx);
@@ -194,26 +143,4 @@ public class JwtProvider {
             throw new AuthException("Auth exception: " + e.getMessage());
         }
     }
-
-    /**
-     * Validates the given access token.
-     *
-     * @param accessToken the JWT access token to validate.
-     * @return true if the access token is valid, false otherwise.
-     */
-    public boolean validateAccessToken(@NonNull String accessToken){
-        return validateToken(accessToken, accessSecretKey);
-    }
-
-    /**
-     * Validates the given refresh token.
-     *
-     * @param refreshToken the JWT refresh token to validate.
-     * @return true if the refresh token is valid, false otherwise.
-     */
-    public boolean validateRefreshToken(@NonNull String refreshToken){
-        return validateToken(refreshToken, refreshSecretKey);
-    }
-
 }
-

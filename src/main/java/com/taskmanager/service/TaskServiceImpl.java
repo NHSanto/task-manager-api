@@ -3,16 +3,23 @@ package com.taskmanager.service;
 import com.taskmanager.dto.IdDto;
 import com.taskmanager.dto.TaskDto;
 import com.taskmanager.dto.TaskNoIdDto;
+import com.taskmanager.dto.UserDto;
 import com.taskmanager.entity.Task;
+import com.taskmanager.entity.User;
 import com.taskmanager.exception.BadRequestException;
+import com.taskmanager.mapper.UserMapper;
 import com.taskmanager.repository.TaskRepository;
+import com.taskmanager.repository.UserRepository;
 import com.taskmanager.service.interfaces.TaskService;
+import com.taskmanager.service.interfaces.UserService;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +36,7 @@ public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final ModelMapper modelMapper;
-
+    private final UserService userService;
     /**
      * Adds a new task.
      *
@@ -38,6 +45,12 @@ public class TaskServiceImpl implements TaskService {
      */
     @Override
     public TaskDto addTask(TaskNoIdDto taskNoIdDto) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User creator =  userService.getUserByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        UserDto creatorDto = UserMapper.toDto(creator);
+        taskNoIdDto.setCreator(creatorDto);
+        taskNoIdDto.setExecutor(creatorDto);
         Task task = taskRepository.save(modelMapper.map(taskNoIdDto, Task.class));
         return modelMapper.map(task, TaskDto.class);
     }

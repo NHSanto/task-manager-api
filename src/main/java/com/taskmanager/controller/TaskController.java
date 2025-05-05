@@ -2,7 +2,9 @@ package com.taskmanager.controller;
 
 import com.taskmanager.dto.*;
 import com.taskmanager.dto.error.ValidationErrorMessageResponseDto;
+import com.taskmanager.entity.User;
 import com.taskmanager.service.interfaces.TaskService;
+import com.taskmanager.service.interfaces.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,6 +20,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
@@ -38,7 +42,7 @@ import java.util.UUID;
 public class TaskController {
 
     private final TaskService taskService;
-
+    private final UserService userService;
     /**
      * Endpoint to create a new task.
      * Accessible only by users with the ADMIN role.
@@ -47,7 +51,7 @@ public class TaskController {
      * @return {@link TaskDto} containing the newly created task.
      */
     @PostMapping("/new")
-    @PreAuthorize("isAuthenticated() && hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "post a new task (only for admin)")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "New task is created", content = @Content(schema = @Schema(implementation = TaskDto.class), mediaType = "application/json")),
@@ -68,8 +72,8 @@ public class TaskController {
      * @return {@link TaskDto} containing the updated task.
      */
     @PutMapping
-    @PreAuthorize("isAuthenticated() && hasRole('ADMIN')")
-    @Operation(summary = "update/change task (only for admin)")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "update/change task")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Task is updated", content = @Content(schema = @Schema(implementation = TaskDto.class), mediaType = "application/json")),
             @ApiResponse(responseCode = "400", description = "Bad request (non valid data)",  content = @Content(schema = @Schema(implementation = ValidationErrorMessageResponseDto.class))),
