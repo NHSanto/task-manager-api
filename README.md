@@ -31,7 +31,7 @@ This is a Spring Boot-based REST API for managing tasks. It features JWT authent
 
 3. Build the project:
     ```bash
-    ./mvnw clean install
+    mvn clean install
     ```
 
 4. Start the db using Docker Compose:
