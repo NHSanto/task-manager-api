@@ -1,5 +1,6 @@
 package com.taskmanager.repository;
 
+import com.taskmanager.dto.TaskDto;
 import com.taskmanager.entity.Task;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,15 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      * @param id The UUID of the task to be deleted.
      */
     void deleteById(UUID id);
+
+    /**
+     * Retrieves tasks by status with pagination support.
+     *
+     * @param pageable The pagination information.
+     * @param status The status of the tasks.
+     * @return A {@link Page} containing all tasks.
+     */
+    Page<Task> findByStatus(String status, Pageable pageable);
 
     /**
      * Retrieves a paginated list of tasks created by a specific user.

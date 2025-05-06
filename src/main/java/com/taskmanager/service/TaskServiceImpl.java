@@ -115,6 +115,17 @@ public class TaskServiceImpl implements TaskService {
     }
 
     /**
+     * Retrieves tasks by status with pagination support.
+     *
+     * @param pageable The pagination information (e.g., page number, size).
+     * @param status The status of the tasks.
+     * @return A {@link Page} of {@link TaskDto} representing all tasks.
+     */
+    public Page<TaskDto> findByStatus(String status, Pageable pageable) {
+        return taskRepository.findByStatus(status, pageable)
+                .map(task -> modelMapper.map(task, TaskDto.class));
+    }
+    /**
      * Retrieves tasks created by a specific user, with pagination support.
      *
      * @param idCreator The ID of the creator of the tasks.

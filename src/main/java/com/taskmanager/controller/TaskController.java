@@ -144,6 +144,29 @@ public class TaskController {
     }
 
     /**
+     * Endpoint to retrieve all tasks by status.
+     * Accessible by authenticated users.
+     * @param status The status of the tasks.
+     * @param page The page number for pagination.
+     * @param size The number of tasks per page.
+     * @return A {@link Page<TaskDto>} containing all tasks.
+     */
+    @GetMapping("/by-status")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get tasks filtered by status (for admin and user)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successful request to get filtered tasks",
+                    content = @Content(schema = @Schema(implementation = TaskDto.class), mediaType = "application/json")),
+            @ApiResponse(responseCode = "403", description = "Forbidden (non authenticated) or access denied",
+                    content = @Content(mediaType = "none"))
+    })
+    public ResponseEntity<Page<TaskDto>> getTasksByStatus(@RequestParam(defaultValue = "pending") String status,
+                                                          @RequestParam(defaultValue = "0") int page,
+                                                          @RequestParam(defaultValue = "3") int size) {
+        return ResponseEntity.ok(taskService.findByStatus(status, PageRequest.of(page, size)));
+    }
+
+    /**
      * Endpoint to retrieve tasks created by a specific user (creator).
      * Accessible by authenticated users.
      *

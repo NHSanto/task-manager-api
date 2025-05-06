@@ -4,6 +4,7 @@ import com.taskmanager.dto.IdDto;
 import com.taskmanager.dto.TaskDto;
 import com.taskmanager.dto.TaskNoIdDto;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
@@ -55,6 +56,13 @@ public interface TaskService {
      */
     Page<TaskDto> findAll(Pageable pageable);
 
+    /**
+     * Retrieves tasks by status with pagination support.
+     * @param status The status of the tasks.
+     * @param pageable The pagination information, including page number and size.
+     * @return A page of tasks.
+     */
+    Page<TaskDto> findByStatus(String status, Pageable pageable);
     /**
      * Retrieves all tasks assigned to a specific creator, with pagination support.
      *

@@ -1,5 +1,6 @@
 package com.taskmanager.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.taskmanager.config.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.EnumType;
@@ -60,6 +61,7 @@ public class UserDto {
          */
         @NotNull(message = "Password must be")
         @Schema(description = "Users password", example = "sdddd789")
+        @JsonIgnore
         private String password;
 
         /**
