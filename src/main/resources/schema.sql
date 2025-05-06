@@ -20,17 +20,6 @@ CREATE TABLE task_management_system.users (
 
 -- Creating the 'tasks' table
 CREATE TABLE task_management_system.tasks (
-    id UUID NOT NULL,
-    title VARCHAR NOT NULL,
-    description VARCHAR NULL,
-    status VARCHAR NOT NULL,
-    priority VARCHAR NOT NULL,
-    id_creator UUID NOT NULL,
-    id_executor UUID NOT NULL,
-    CONSTRAINT task_pk PRIMARY KEY (id)
-);
-
-CREATE TABLE task_management_system.tasks (
     id          UUID    NOT NULL,
     title       VARCHAR NOT NULL,
     description VARCHAR NULL,

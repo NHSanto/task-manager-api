@@ -45,14 +45,13 @@ public class TaskController {
     private final UserService userService;
     /**
      * Endpoint to create a new task.
-     * Accessible only by users with the ADMIN role.
      *
      * @param taskNoIdDto The request body containing task details (excluding the ID).
      * @return {@link TaskDto} containing the newly created task.
      */
     @PostMapping("/new")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "post a new task (only for admin)")
+    @Operation(summary = "post a new task")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "New task is created", content = @Content(schema = @Schema(implementation = TaskDto.class), mediaType = "application/json")),
             @ApiResponse(responseCode = "400", description = "Bad request (non valid data)",  content = @Content(schema = @Schema(implementation = ValidationErrorMessageResponseDto.class))),
@@ -112,8 +111,8 @@ public class TaskController {
      * @param idDto The request body containing the task ID to be deleted.
      */
     @DeleteMapping
-    @PreAuthorize("isAuthenticated() && hasRole('ADMIN')")
-    @Operation(summary = "delete task by task id (only for admin)")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "delete task by task id")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Task is deleted", content = @Content(mediaType = "none")),
             @ApiResponse(responseCode = "400", description = "Bad request (non valid data)",  content = @Content(schema = @Schema(implementation = ValidationErrorMessageResponseDto.class))),
